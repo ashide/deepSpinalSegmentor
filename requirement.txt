@@ -1,0 +1,13 @@
+numpy<1.19.0 
+future>=0.17.1
+gast==0.3.3
+tensorflow-gpu
+tensorflow-addons
+pynrrd
+pickle-mixin
+scipy
+h5py<2.11.0,>=2.10.0
+pillow
+volumentations-3D
+keras
+pydot
