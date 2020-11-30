@@ -6,9 +6,9 @@ import random
 
 # input pointer
 dataPaths = "D:/test/segmentation/database/Attemp6.txt"
-cubePath = "./data/output/Attempt6/"
+cubePath = "./data/output/Attempt6-Aug/"
 cubeSide = 128
-augmentation = True
+augmentation = 3
 testPortion = .2
 
 def normalize_0_1(x):
@@ -74,8 +74,8 @@ imagePaths = get_volume_paths(dataPaths)
 trainImages, testImages = divideTestAndTrain(imagePaths)
 totalCount = len(imagePaths)
 trainCount = len(trainImages)
-trainMatrix = np.zeros((2, trainCount if not augmentation else trainCount * 2, cubeSide, cubeSide, cubeSide))
-testMatrix = np.zeros((2, (totalCount - trainCount) if not augmentation else ((totalCount - trainCount)*2), cubeSide, cubeSide, cubeSide))
+trainMatrix = np.zeros((2, trainCount * (1 + augmentation), cubeSide, cubeSide, cubeSide))
+testMatrix = np.zeros((2, (totalCount - trainCount) * (1 + augmentation), cubeSide, cubeSide, cubeSide))
 
 def insertDataToMatrix(imageData, maskData, isTrain, index):
     # getting ready
@@ -126,12 +126,12 @@ for i in range(totalCount):
     imageData, maskData = readAndFixNrrdImage(trainImages[i]) if isTrain else readAndFixNrrdImage(testImages[i - trainCount])
     print("Appending. ", end="")
     dataIndex = i if isTrain else (i - trainCount)
-    dataIndex = dataIndex * 2 if augmentation else dataIndex
+    dataIndex = dataIndex * (1 + augmentation)
     insertDataToMatrix(imageData, maskData, isTrain, dataIndex)
-    if augmentation:
+    for augIndex in range(augmentation):
         print("Augmentation. ", end="")
         augImageData, augMaskData = applyAugmentation(imageData, maskData)
-        insertDataToMatrix(augImageData, augMaskData, isTrain, dataIndex + 1)
+        insertDataToMatrix(augImageData, augMaskData, isTrain, dataIndex + augIndex + 1)
     print("Done. ")
     
 # hdf5
