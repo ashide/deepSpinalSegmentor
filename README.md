@@ -8,6 +8,12 @@ Training with this data might take up to few days to finish depending on the bat
 Unet 3d is just another version of unet2d where it uses 3D filters in its computation of convolution. 
 All trained models will be validated on a never seen data called the test data and later will be compared with each other.
 
+#### Work flow :
+Here you can see the model architecture for both 2d and 3d. 
+Depending on the model architecture, UNet 3d or UNet 2d, the input data must be designed accordingly. 
+
+<img src="images/cube.jpg" height="400">
+
 #### Sample augmented images :
 
 <img src="images/augmentation.png" height="650" width="400">
@@ -60,10 +66,10 @@ The data is taken from different sources:
 
 ### Dice loss plot
 
-Training accuracy over epochs for Unet-2D and Unet-3D of one of the combination datasets has shown in follow:
-<img src="images/plot.png">
+Training accuracy over epochs for Unet-2D and Unet-3D of one of the combination datasets has shown in follow.
+Both networks showed similar results, with Unet-3d performing slightly better than Unet-2d on an unseen data from transfer learning.
 
-# Dice loss for this sample is as follows: </br>
-DSC Unet-2D : 0.9067%  </br>
-DSC Unet-3D : 0.8047%  
+<img src="images/accuracy.png">
+
+
 
