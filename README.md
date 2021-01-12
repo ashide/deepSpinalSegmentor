@@ -64,12 +64,79 @@ The data is taken from different sources:
 #### Osf: https://osf.io/hns8b/?view\_only=f5089274d4a449cda2fef1d2df0ecc56  </br>
 #### vissim-datasets(Cervical spine, Whole spine): https://www.uni-koblenz-landau.de/en/campus-koblenz/fb4/icv/vissim
 
-### Dice loss plot
+
+### Evaluation results
+
+The result for the comparison of Unet-2D and Unet-3D is presented in Table below. The result explains the validation and test estimates for these two models, where Unet-2D has the higher accuracy in validation, while on the other hand Unet-3D performs better in the test data sets. 
+
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-v0hj" rowspan="2"><br>Datasets</th>
+    <th class="tg-v0hj" colspan="2">Valid</th>
+    <th class="tg-v0hj" colspan="2">Test</th>
+  </tr>
+  <tr>
+    <td class="tg-dvid">Unet-2D</td>
+    <td class="tg-dvid">Unet-3D</td>
+    <td class="tg-dvid">Unet-2D</td>
+    <td class="tg-dvid">Unet-3D</td>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-0pky">Cervical spine</td>
+    <td class="tg-fymr">0.8921</td>
+    <td class="tg-0pky">0.6451</td>
+    <td class="tg-0pky">0.6729</td>
+    <td class="tg-0pky">0.7488</td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">Siegen and Cervical spine</td>
+    <td class="tg-fymr">0.8943</td>
+    <td class="tg-0pky">0.5950</td>
+    <td class="tg-0pky">0.6403</td>
+    <td class="tg-0pky">0.6813</td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">Zenodo,Siegen,Cervical spine</td>
+    <td class="tg-fymr">0.9125</td>
+    <td class="tg-0pky">0.7769</td>
+    <td class="tg-0pky">0.7762</td>
+    <td class="tg-0pky">0.8063</td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">Osf,Siegen,Cervical spine</td>
+    <td class="tg-fymr">0.8947</td>
+    <td class="tg-0pky">0.7022</td>
+    <td class="tg-0pky">0.541</td>
+    <td class="tg-0pky">0.667</td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">Zenodo,Whole spine</td>
+    <td class="tg-fymr">0.9101</td>
+    <td class="tg-0pky">0.7675</td>
+    <td class="tg-0pky">0.7503</td>
+    <td class="tg-0pky">0.7973</td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">Zenodo,Siegen,Whole spine,Osf</td>
+    <td class="tg-fymr">0.8986</td>
+    <td class="tg-0pky">0.7101</td>
+    <td class="tg-0pky">0.6755</td>
+    <td class="tg-0pky">0.7659</td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">Zenodo, Siegen, Whole spine,Cervical spine, Osf (tripled augmentation)</td>
+    <td class="tg-fymr">0.885</td>
+    <td class="tg-0pky">0.7586</td>
+    <td class="tg-0pky">0.668</td>
+    <td class="tg-0pky">0.748</td>
+  </tr>
+</tbody>
+</table>
+
 
 Training accuracy over epochs for Unet-2D and Unet-3D of one of the combination datasets has shown in follow. 
-Both networks showed similar results, with Unet-3d performing slightly better than Unet-2d on an unseen data and Unet-2D has reached the threshhold much faster than Unet-3D.
 
 <img src="images/chart.png">
-
-
-
