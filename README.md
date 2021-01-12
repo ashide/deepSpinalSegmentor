@@ -69,7 +69,7 @@ The data is taken from different sources:
 Training accuracy over epochs for Unet-2D and Unet-3D of one of the combination datasets has shown in follow.
 Both networks showed similar results, with Unet-3d performing slightly better than Unet-2d on an unseen data from transfer learning.
 
-<img src="images/accuracy.png">
+<img src="images/chart.png">
 
 
 
