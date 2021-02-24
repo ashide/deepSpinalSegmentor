@@ -2,8 +2,8 @@ import numpy as np
 from PIL import Image as pImage
 import math
 
-cubePath = "./data/output/Attempt5/"
-outputFolder = "./data/output/Attempt5/"
+cubePath = "./data/output/Attempt6-Aug/"
+outputFolder = "./data/output/Attempt6-Aug/"
 trainMatrix = np.load(cubePath + "trainMatrix.npy")
 testMatrix = np.load(cubePath + "testMatrix.npy")
 

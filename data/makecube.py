@@ -5,10 +5,10 @@ import volumentations as V
 import random
 
 # input pointer
-dataPaths = "D:/test/segmentation/database/Attemp6.txt"
-cubePath = "./data/output/Attempt6-Aug/"
+dataPaths = "D:/test/segmentation/database/cervical.txt"
+cubePath = "./data/output/Cervical/"
 cubeSide = 128
-augmentation = 3
+augmentation = 1
 testPortion = .2
 
 def normalize_0_1(x):

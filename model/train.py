@@ -14,39 +14,24 @@ from keras.utils.vis_utils import plot_model
 from skimage import io
 import tensorflow as tf
 import pickle
+import matplotlib.pyplot as plt
+from datetime import datetime
+from model.metrics import dice_coef, dice_coef_loss, generalized_dice_coeff
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
 K.set_image_data_format('channels_last')  # TF dimension ordering in this code
-cubePath = "./data/output/Attempt6/"
-modelPath = "./model/output/Attempt6/3D/"
 
-print('-'*30, '\nLoading data...\n', '-'*30)
-trainMatrix = np.load(cubePath + "trainMatrix.npy")
-testMatrix = np.load(cubePath + "testMatrix.npy")
-cubeSide = trainMatrix.shape[-1]
-smooth = 1
-
-def dice_coef(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = K.sum(y_true_f * y_pred_f)
-    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
-
-
-def dice_coef_loss(y_true, y_pred):
-    return -dice_coef(y_true, y_pred)
+def getEvaluationMetrics():
+    return [dice_coef, "mse", "mae", "acc", generalized_dice_coeff]
 
 def conv2d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
     # first layer
-    x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size), kernel_initializer="he_normal",
-               padding="same")(input_tensor)
+    x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size), kernel_initializer="he_normal", padding="same")(input_tensor)
     if batchnorm:
         x = BatchNormalization()(x)
     x = Activation("relu")(x)
     # second layer
-    x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size), kernel_initializer="he_normal",
-               padding="same")(x)
+    x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size), kernel_initializer="he_normal", padding="same")(x)
     if batchnorm:
         x = BatchNormalization()(x)
     x = Activation("relu")(x)
@@ -65,7 +50,7 @@ def conv3d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
     x = Activation("relu")(x)
     return x
 
-def get_unet_2d():
+def get_unet_2d(cubeSide, modelPath=None):
     n_filters=16 
     dropout=0.5
     batchnorm=True
@@ -113,14 +98,14 @@ def get_unet_2d():
     outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
     model = Model(inputs=[input_img], outputs=[outputs])
 
-    model.compile(optimizer=Adam(lr=1e-3), loss="binary_crossentropy", metrics=[dice_coef, "binary_accuracy", "mse", "mae", "acc"])
+    model.compile(optimizer=Adam(lr=1e-3), loss=dice_coef_loss, metrics=getEvaluationMetrics())
 
     model.summary()
-    plot_model(model, to_file=modelPath + "Model_2D.png", show_shapes=True)
+    if modelPath:
+        plot_model(model, to_file=modelPath + "Unet_2D.png", show_shapes=True)
     return model    
 
-
-def get_unet_3d():
+def get_unet_3d(cubeSide, modelPath=None):
     n_filters=16
     dropout=0.5
     batchnorm=True
@@ -168,97 +153,79 @@ def get_unet_3d():
     outputs = Conv3D(1, (1, 1, 1), activation='sigmoid') (c9)
     model = Model(inputs=[input_img], outputs=[outputs])
 
-    model.compile(optimizer=Adam(lr=1e-3), loss="binary_crossentropy", metrics=[dice_coef, "binary_accuracy", "mse", "mae", "acc"])
+    model.compile(optimizer=Adam(lr=1e-3), loss=dice_coef_loss, metrics=getEvaluationMetrics())
 
     model.summary()
-    plot_model(model, to_file=modelPath + "Model_3D.png", show_shapes=True)
+    if modelPath:
+        plot_model(model, to_file=modelPath + "Unet_3D.png", show_shapes=True)
     return model    
         
-
-import matplotlib.pyplot as plt
-
-def prepareFor2D(inputMatrix):    
+def prepareFor2D(inputMatrix, shuffle=True):    
     transposed = np.transpose(inputMatrix, (1,2,3,4,0))
     combined = np.concatenate(transposed, axis=0)
     # shuffle
-    np.random.shuffle(combined)
+    if shuffle:
+        np.random.shuffle(combined)
     combined = np.transpose(combined, (3,0,1,2))[..., np.newaxis]
     return combined[0], combined[1]
 
-def prepareFor3D(inputMatrix):
+def prepareFor3D(inputMatrix, shuffle=True):
     transposed = np.transpose(inputMatrix, (1,2,3,4,0))
     # shuffle
-    np.random.shuffle(transposed)
+    if shuffle:
+        np.random.shuffle(transposed)
     combined = np.transpose(transposed, (4,0,1,2,3))[..., np.newaxis]
     return combined[0], combined[1]
 
-def train_and_predict2D():       
+def train_and_predict(cubePath, modelPath):  
+    print('-'*30, '\nLoading data...\n', '-'*30)
+    trainMatrix = np.load(cubePath + "trainMatrix.npy")
+    testMatrix = np.load(cubePath + "testMatrix.npy")
+    cubeSide = trainMatrix.shape[-1]     
     print('-'*30, '\nCreating and compiling model...\n', '-'*30)
-    model = get_unet_2d()
-    model_checkpoint = ModelCheckpoint(modelPath + "Model_2D.h5", monitor='val_loss', save_best_only=True)
-    
-    print('-'*30, '\nTraining...\n', '-'*30)
-    trainImgs, trainLabels = prepareFor2D(trainMatrix)
-    history = model.fit(trainImgs, trainLabels, batch_size=100, epochs=200, verbose=1, shuffle=True, validation_split=0.2, callbacks=[model_checkpoint])
-
-    #pickle.dump(history, open(modelPath + "history.pickle", "wb" ) )
-    print('-'*30, '\Predicting Tests...\n', '-'*30)
-    testImgs, testLabels = prepareFor2D(testMatrix)
-    model.load_weights(modelPath + "Model_2D.h5")
-    imgs_pred_test = model.predict(testImgs, verbose=1)
-    
-    print('-'*30, '\nSaving Predictions...\n', '-'*30)
-    for k in range(cubeSide):
-        a = (testImgs[k][:,:,0]*200).astype("uint8")
-        b = (testLabels[k][:,:,0]*255).astype("uint8")
-        c = (imgs_pred_test[k][:,:,0]*55).astype("uint8")
-        a3 = np.stack((a,)*3, axis=-1)
-        a3[:,:,1] = a + c
-        io.imsave(os.path.join(modelPath, "2d_pred_" + str(k) + '.png'), mark_boundaries(a3,b))
-
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-
-    plt.title('Model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
-
-def train_and_predict3D():
-    print('-'*30, '\nCreating and compiling model...\n', '-'*30)
-    model = get_unet_3d()
-    model_checkpoint = ModelCheckpoint(modelPath + "Model_3D.h5", monitor='val_loss', save_best_only=True)
-    
-    print('-'*30, '\nTraining...\n', '-'*30)
-    #model.load_weights(modelPath + "Model_3D.h5")
-    trainImgs, trainLabels = prepareFor3D(trainMatrix)
-    history = model.fit(trainImgs, trainLabels, batch_size=2, epochs=500, verbose=1, shuffle=True, validation_split=0.3, callbacks=[model_checkpoint])
-
-    #pickle.dump(history, open(modelPath + "history.pickle", "wb" ) )
-    print('-'*30, '\Predicting Tests...\n', '-'*30)
-    testImgs, testLabels = prepareFor3D(testMatrix)
-    model.load_weights(modelPath + "Model_3D.h5")
-    imgs_pred_test = model.predict(testImgs, batch_size=1, verbose=1)
-    
-    print('-'*30, '\nSaving Predictions...\n', '-'*30)
-    for i in range(testImgs.shape[0]):
-        for k in range(cubeSide):
-            a = (testImgs[i][k][:,:,0]*200).astype("uint8")
-            b = (testLabels[i][k][:,:,0]*255).astype("uint8")
-            c = (imgs_pred_test[i][k][:,:,0]*55).astype("uint8")
-            a3 = np.stack((a,)*3, axis=-1)
-            a3[:,:,1] = a + c
-            io.imsave(os.path.join(modelPath, "3d_pred_" + str(i) + '_' + str(k) + '.png'), mark_boundaries(a3,b))
-
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('Model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
-
-
+    unet_2d = get_unet_2d(cubeSide, modelPath)
+    unet_3d = get_unet_3d(cubeSide, modelPath)
+    unet_2d_checkpoint = ModelCheckpoint(modelPath + "Unet_2D.h5", monitor='val_loss', save_best_only=True)
+    unet_3d_checkpoint = ModelCheckpoint(modelPath + "Unet_3D.h5", monitor='val_loss', save_best_only=True)
+    epoch=0
+    trainImgs_2d, trainLabels_2d = prepareFor2D(trainMatrix)
+    testImgs_2d, testLabels_2d = prepareFor2D(testMatrix)
+    trainImgs_3d, trainLabels_3d = prepareFor3D(trainMatrix)
+    testImgs_3d, testLabels_3d = prepareFor3D(testMatrix)
+    historyObject=[]
+    while epoch<300:
+        print('\nEpochs from '+str(epoch)+'\n')
+        epoch = epoch + 10
+        print('\nTraining 2D...10 Epochs\n')
+        dateTimeObj = datetime.now()
+        history_2d = unet_2d.fit(trainImgs_2d, trainLabels_2d, batch_size=100, epochs=10, verbose=1, shuffle=True, validation_split=0.3, callbacks=[unet_2d_checkpoint])
+        unet_2d_time = datetime.now() - dateTimeObj
+        dateTimeObj = datetime.now()
+        print('\nTraining 3D...10 Epochs\n')
+        history_3d = unet_3d.fit(trainImgs_3d, trainLabels_3d, batch_size=2, epochs=10, verbose=1, shuffle=True, validation_split=0.3, callbacks=[unet_3d_checkpoint])
+        unet_3d_time = datetime.now() - dateTimeObj
+        # 10 epochs have passed
+        print('\nAnalysis...\n')
+        testPredict_2d = unet_2d.predict(testImgs_2d, verbose=0)
+        testPredict_3d = unet_3d.predict(testImgs_3d, verbose=0, batch_size=1)
+        testDSC_2d = dice_coef(testPredict_2d, testLabels_2d).numpy()
+        testDSC_3d = dice_coef(testPredict_3d, testLabels_3d).numpy()
+        historyStep=dict()
+        historyStep["history_2d"] = history_2d.history
+        historyStep["history_3d"] = history_3d.history
+        historyStep["testDSC_2d"] = testDSC_2d
+        historyStep["testDSC_3d"] = testDSC_3d
+        historyStep["unet_2d_time"] = unet_2d_time
+        historyStep["unet_3d_time"] = unet_3d_time
+        historyObject.append(historyStep)
+        historyFile = open(modelPath + "historyFile.pickle", "wb")
+        pickle.dump(historyObject, historyFile)
+        historyFile.close()
+        
 if __name__ == '__main__':
-    train_and_predict3D()
+    for i in range(1,8):
+        print('\nAttempt '+str(i)+'...\n')
+        cubePath = "./data/output/Attempt"+str(i)+"/"
+        modelPath = "./model/output/Attempt"+str(i)+"/"
+        train_and_predict(cubePath, modelPath)
+    
